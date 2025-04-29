@@ -17,7 +17,6 @@ export const setUpSocketServer  = (server:httpServer) => {
             wss.emit('connection',ws,userId,groupName)
         });
     });
-
     wss.on('connection',async(socket:WebSocket,userId:string,groupName:string)=>{
         clients.set(userId,socket);
         if (!groupClients.has(groupName)) {
