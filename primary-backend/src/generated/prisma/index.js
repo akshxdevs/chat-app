@@ -125,7 +125,7 @@ const config = {
       "value": "prisma-client-js"
     },
     "output": {
-      "value": "/home/akshxdevs/codes/projects/github-projects/chat-app/primary-backend/src/generated/prisma",
+      "value": "/home/akshxdevs/codes/projects/chat-app/primary-backend/src/generated/prisma",
       "fromEnvVar": null
     },
     "config": {
@@ -139,12 +139,11 @@ const config = {
       }
     ],
     "previewFeatures": [],
-    "sourceFilePath": "/home/akshxdevs/codes/projects/github-projects/chat-app/primary-backend/prisma/schema.prisma",
+    "sourceFilePath": "/home/akshxdevs/codes/projects/chat-app/primary-backend/prisma/schema.prisma",
     "isCustomOutput": true
   },
   "relativeEnvPaths": {
-    "rootEnvPath": null,
-    "schemaEnvPath": "../../../.env"
+    "rootEnvPath": null
   },
   "relativePath": "../../../prisma",
   "clientVersion": "6.7.0",
@@ -153,7 +152,7 @@ const config = {
     "db"
   ],
   "activeProvider": "postgresql",
-  "postinstall": false,
+  "postinstall": true,
   "inlineDatasources": {
     "db": {
       "url": {
