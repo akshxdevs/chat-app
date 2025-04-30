@@ -12,7 +12,7 @@ const user_1 = require("./routes/user");
 const app = (0, express_1.default)();
 app.use((0, cors_1.default)());
 app.use(express_1.default.json());
-app.use("/api/v1/user", user_1.userRouter);
+app.use("/api/v1/user", user_1.UserRouter);
 const server = http_1.default.createServer(app);
 (0, socket_1.setUpSocketServer)(server);
 server.listen(config_1.PORT, () => {

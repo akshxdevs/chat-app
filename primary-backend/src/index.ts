@@ -3,14 +3,14 @@ import express from "express";
 import cors from "cors";
 import { PORT } from "./config";
 import { setUpSocketServer } from "./socket";
-import { userRouter } from "./routes/user";
+import { UserRouter } from "./routes/user";
 
 const app = express();
 
 app.use(cors());
 app.use(express.json());
 
-app.use("/api/v1/user",userRouter);
+app.use("/api/v1/user",UserRouter);
 
 const server = http.createServer(app);
 
