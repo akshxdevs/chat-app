@@ -1,4 +1,39 @@
+"use client";
+import { BACKEND_URL } from "@/config";
+import axios from "axios";
+import { useEffect, useState } from "react"
+
 export default function(){
+    const [messagefeed,setmessageFeed] = useState<any[]>([]);
+    const [userId,setUserId] = useState<string|null>(null);
+    const [profileImg,setProfileImg] = useState<string|null>(null);
+    const [showChatModel,setShowChatModel] = useState(true);
+    const [contactName,setContactName] = useState();
+    const [contactProfileImg,setContactProfileImg] = useState();
+    console.log(userId);
+    
+    const getAllMessageFeed = async() => {
+        const res = await axios.get(`${BACKEND_URL}/message/get/${userId}`);
+        if (res.data) {
+            console.log(res.data);
+            setmessageFeed(res.data.getMessagefeed);
+        }
+    };
+    useEffect(()=>{
+        const getUserId  = localStorage.getItem("userId");
+        if (getUserId) setUserId(getUserId);
+        const getProfileImg  = localStorage.getItem("profileImg");
+        if (getProfileImg) setProfileImg(getProfileImg);
+    },[]);
+    useEffect(()=>{
+        getAllMessageFeed();
+    },[userId]);
+
+    const chatDetails = ({contactName,profileImg}:any) => {
+        console.log(contactName,profileImg);
+        setContactName(contactName);
+        setContactProfileImg(profileImg)
+    }
     return <div className="flex flex-col justify-center items-center h-screen">
     <div className="bg-gray-800 border border-gray-500 rounded-lg">
         <div className="flex justify-between h-[600px]">
@@ -34,9 +69,17 @@ export default function(){
                             </svg>
                         </button>
                         <button>
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" className="size-6">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M17.982 18.725A7.488 7.488 0 0 0 12 15.75a7.488 7.488 0 0 0-5.982 2.975m11.963 0a9 9 0 1 0-11.963 0m11.963 0A8.966 8.966 0 0 1 12 21a8.966 8.966 0 0 1-5.982-2.275M15 9.75a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
-                            </svg>
+                            {profileImg ? (
+                                <div>
+                                    <img src={profileImg} alt="ProfilePic" className="rounded-full w-fit h-8 border border-gray-700 object-cover object-center"/>
+                                </div>
+                            ):(
+                                <div>
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" className="size-6">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M17.982 18.725A7.488 7.488 0 0 0 12 15.75a7.488 7.488 0 0 0-5.982 2.975m11.963 0a9 9 0 1 0-11.963 0m11.963 0A8.966 8.966 0 0 1 12 21a8.966 8.966 0 0 1-5.982-2.275M15 9.75a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
+                                    </svg>
+                                </div>
+                            )}
                         </button>
                     </div>
                 </div>
@@ -69,7 +112,7 @@ export default function(){
                         <input type="text" placeholder="Search" className="w-full outline-none border-none"/>
                     </div>
                 </div>
-                <div className="flex justify-between border-b px-5 pb-2 border-gray-800"> 
+                <div className="flex justify-between border-b px-5 pb-2 border-gray-800 "> 
                     <div className="border px-2 py-1 rounded-lg">
                         <h1>All</h1>
                     </div>
@@ -84,19 +127,77 @@ export default function(){
                     </div>
                 </div>
                 <div>
-                    {/* Map Funtions(User-Chats) */}
+                    {messagefeed.length>0 ? (
+                        <div>
+                                {messagefeed.map((feed,index)=>(
+                                    <div key={index} className="border-b border-gray-700 pt-2 px-1">
+                                        <button className="flex gap-4" onClick={()=>{
+                                            setShowChatModel(true)
+                                            chatDetails({contactName:feed.contactName,profileImg:feed.profilePic})}}>
+                                            <img src={feed.profilePic} alt="profilePic" className="border border-gray-700 rounded-full w-fit h-10 object-cover object-center"/>
+                                            <div className="flex justify-between gap-32">
+                                                <div className="flex flex-col">
+                                                    <h1 className="font-semibold text-lg text-start">{feed.contactName}</h1>
+                                                    <p className="text-sm font-semibold">{"• unRead messages"}</p>
+                                                </div>
+                                                <div className="flex flex-col justify-center items-center py-2">
+                                                    <p className="text-xs font-semibold py-1">{"17.45"}</p>
+                                                    <p className="w-5 h-5 text-[12px] bg-green-700 rounded-full text-center py-[1px]">{"1"}</p>
+                                                </div>
+                                            </div>
+                                        </button>
+                                    </div>
+                                ))} 
+                           
+                        </div>
+                    ):(
+                        <div className="flex justify-center items-center h-80">
+                            No Messages
+                        </div>
+                    )}
                 </div>
             </div>
-            <div className="py-70">
-                <div className="flex flex-col justify-between items-center w-[500px] gap-32">
-                    <div className="flex flex-col justify-center items-center p-3 gap-3">
-                        <h1 className="text-3xl font-semibold">Chating Web</h1>
-                        <p className="text-center">
-                        Send and receive messages without keeping your phone online. Use WhatsApp on up to 4 linked devices and 1 phone at the same time.
-                        </p>
+            <div className="">
+                {showChatModel ? (
+                    <div className="w-[400px] h-full">
+                        <div className="flex flex-col justify-between gap-56">
+                            <div className="flex">
+                                <img src={contactProfileImg} alt="profilePic" className="border border-gray-700 rounded-full w-fit h-10 object-cover object-center"/>
+                                <h1 className="font-semibold text-lg text-start">{contactName}</h1>
+                            </div>
+                            <div>
+
+                            </div>
+                            <div className="flex w-full">
+                                <button>
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                                    </svg>
+                                </button>
+                                <div>
+                                    <input type="text" placeholder="Type a message" />
+                                </div>
+                                <button>
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 18.75a6 6 0 0 0 6-6v-1.5m-6 7.5a6 6 0 0 1-6-6v-1.5m6 7.5v3.75m-3.75 0h7.5M12 15.75a3 3 0 0 1-3-3V4.5a3 3 0 1 1 6 0v8.25a3 3 0 0 1-3 3Z" />
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
                     </div>
-                    <p className="text-sm text-gray-500">🔒 Your personal messages are end-to-end encrypted</p>
-                </div>
+                ):(
+                    <div className="py-70">
+                        <div className="flex flex-col justify-between items-center w-[500px] gap-32">
+                            <div className="flex flex-col justify-center items-center p-3 gap-3">
+                                <h1 className="text-3xl font-semibold">Chating Web</h1>
+                                <p className="text-center">
+                                Send and receive messages without keeping your phone online. Use WhatsApp on up to 4 linked devices and 1 phone at the same time.
+                                </p>
+                            </div>
+                            <p className="text-sm text-gray-500">🔒 Your personal messages are end-to-end encrypted</p>
+                        </div>
+                    </div>
+                )}
             </div>
         </div>
     </div>

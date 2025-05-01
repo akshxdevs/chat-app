@@ -5,11 +5,7 @@ import { toast } from "react-toastify";
 import { useRouter } from "next/navigation";
 import { BACKEND_URL } from "@/config";
 
-interface Props {
-    setLoginModel: Dispatch<SetStateAction<boolean>>;
-}
-
-export default function LoginModal({ setLoginModel }: Props) {
+export default function () {
     const [phoneNo,setPhoneNo] = useState();
     const [otp,setOtp] = useState();
     const [otpModel,setOtpModel] = useState(false);
@@ -38,9 +34,9 @@ export default function LoginModal({ setLoginModel }: Props) {
                                 router.push(`/message/${userId}`);
                                 localStorage.setItem("userId",res.data.user.id);
                                 localStorage.setItem("token",res.data.token);
-                                localStorage.setItem("mobileNo",res.data.user.mobileNo);
+                                localStorage.setItem("mobileNo",res.data.user.phoneNo);
+                                localStorage.setItem("profileImg",res.data.user.profileImg);
                                 localStorage.setItem("name",res.data.user.name);
-                                setLoginModel(false);
                             }
                         } catch (error) {
                             console.error(error);
