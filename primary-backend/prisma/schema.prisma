@@ -20,4 +20,17 @@ model User {
   name String?
   mobileNo String @unique
   profileImg String?
+  bio String?
+  messageFeed MessageFeed[]
+}
+
+model MessageFeed  {
+  id String @id @default(uuid())
+  contactName String @unique
+  constactId String @unique
+  profilePic String?
+  phoneNo  String? @unique
+  bio String?
+  userId String
+  user User @relation(fields: [userId],references: [id]) 
 }
