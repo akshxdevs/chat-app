@@ -2,15 +2,6 @@
 import { BACKEND_URL } from "@/config";
 import axios from "axios";
 import { useEffect, useRef, useState } from "react"
-import { Socket } from "socket.io-client";
-
-interface Message{
-    from:string,
-    to:string,
-    text:string
-}
-
-
 
 export default function(){
     const [socket,setSocket] = useState<WebSocket | null>(null);
