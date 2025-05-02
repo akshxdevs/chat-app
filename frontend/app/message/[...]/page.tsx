@@ -24,8 +24,6 @@ export default function(){
     const [message,setMessage] = useState("");
     const [sendModel,setSendModel] = useState(false);
     const [receiverId,setReceiverId] = useState();
-    const socketRef = useRef<WebSocket | null>(null)
-    console.log(receiverId);
     
     const getAllMessageFeed = async() => {
         const res = await axios.get(`${BACKEND_URL}/message/get/${userId}`);
@@ -78,7 +76,6 @@ export default function(){
         };
       }, [userId]);
     
-      // Send message
       const SendMessage = () => {
         if (socket && socket.readyState === WebSocket.OPEN && message.trim() && receiverId) {
           const msg:any = { from: userId, to: receiverId, text: message };
