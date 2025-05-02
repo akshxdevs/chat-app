@@ -1,7 +1,7 @@
 "use client";
 import { BACKEND_URL } from "@/config";
 import axios from "axios";
-import { useEffect, useRef, useState } from "react"
+import { useEffect, useState } from "react"
 
 export default function(){
     const [socket,setSocket] = useState<WebSocket | null>(null);
