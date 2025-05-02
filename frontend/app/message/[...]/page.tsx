@@ -1,21 +1,35 @@
 "use client";
 import { BACKEND_URL } from "@/config";
 import axios from "axios";
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
+import { Socket } from "socket.io-client";
+
+interface Message{
+    from:string,
+    to:string,
+    text:string
+}
+
+
 
 export default function(){
+    const [socket,setSocket] = useState<WebSocket | null>(null);
+    const [messages,setMessages] = useState<{from:string; to:string; text:string}[]>([]);
     const [messagefeed,setmessageFeed] = useState<any[]>([]);
     const [userId,setUserId] = useState<string|null>(null);
     const [profileImg,setProfileImg] = useState<string|null>(null);
-    const [showChatModel,setShowChatModel] = useState(true);
+    const [showChatModel,setShowChatModel] = useState(false);
     const [contactName,setContactName] = useState();
     const [contactProfileImg,setContactProfileImg] = useState();
-    console.log(userId);
+    const [message,setMessage] = useState("");
+    const [sendModel,setSendModel] = useState(false);
+    const [receiverId,setReceiverId] = useState();
+    const socketRef = useRef<WebSocket | null>(null)
+    console.log(receiverId);
     
     const getAllMessageFeed = async() => {
         const res = await axios.get(`${BACKEND_URL}/message/get/${userId}`);
         if (res.data) {
-            console.log(res.data);
             setmessageFeed(res.data.getMessagefeed);
         }
     };
@@ -29,11 +43,58 @@ export default function(){
         getAllMessageFeed();
     },[userId]);
 
-    const chatDetails = ({contactName,profileImg}:any) => {
-        console.log(contactName,profileImg);
+    useEffect(() => {
+        if (!userId) return;
+    
+        const ws = new WebSocket(`ws://localhost:3000/${userId}`);
+    
+        ws.onopen = () => {
+          console.log('WebSocket connected');
+          setSocket(ws);
+        };
+    
+        ws.onmessage = (event) => {
+          try {
+            const received = JSON.parse(event.data);
+    
+            const fullMessage = {
+              ...received,
+              to: userId,
+            };
+    
+            setMessages((prev) => [...prev, fullMessage]);
+            console.log('Received:', fullMessage);
+          } catch (err) {
+            console.error('Invalid JSON from server:', event.data);
+          }
+        };
+    
+        ws.onclose = () => {
+          console.log('WebSocket disconnected');
+        };
+    
+        return () => {
+          ws.close();
+        };
+      }, [userId]);
+    
+      // Send message
+      const SendMessage = () => {
+        if (socket && socket.readyState === WebSocket.OPEN && message.trim() && receiverId) {
+          const msg:any = { from: userId, to: receiverId, text: message };
+          socket.send(JSON.stringify(msg));
+          setMessages((prev) => [...prev, msg]);
+          setMessage('');
+        } else {
+          console.warn('WebSocket is not open or message is empty');
+        }
+      };
+    const chatDetails = ({contactName,profileImg,contactId}:any) => {
         setContactName(contactName);
         setContactProfileImg(profileImg)
-    }
+        setReceiverId(contactId);
+    }      
+      
     return <div className="flex flex-col justify-center items-center h-screen">
     <div className="bg-gray-800 border border-gray-500 rounded-lg">
         <div className="flex justify-between h-[600px]">
@@ -133,7 +194,7 @@ export default function(){
                                     <div key={index} className="border-b border-gray-700 pt-2 px-1">
                                         <button className="flex gap-4" onClick={()=>{
                                             setShowChatModel(true)
-                                            chatDetails({contactName:feed.contactName,profileImg:feed.profilePic})}}>
+                                            chatDetails({contactName:feed.contactName,profileImg:feed.profilePic,contactId:feed.id})}}>
                                             <img src={feed.profilePic} alt="profilePic" className="border border-gray-700 rounded-full w-fit h-10 object-cover object-center"/>
                                             <div className="flex justify-between gap-32">
                                                 <div className="flex flex-col">
@@ -159,28 +220,99 @@ export default function(){
             </div>
             <div className="">
                 {showChatModel ? (
-                    <div className="w-[400px] h-full">
-                        <div className="flex flex-col justify-between gap-56">
-                            <div className="flex">
-                                <img src={contactProfileImg} alt="profilePic" className="border border-gray-700 rounded-full w-fit h-10 object-cover object-center"/>
-                                <h1 className="font-semibold text-lg text-start">{contactName}</h1>
+                    <div className="w-[432px] h-full flex flex-col bg-[#041016a6]">
+                        <div className="flex flex-col justify-between gap-[242px]">
+                            <div className="flex justify-between gap-4 p-2 bg-gray-600">
+                                <div className="flex gap-4">
+                                    <img src={contactProfileImg} alt="profilePic" className="border bg-black border-gray-700 rounded-full w-fit h-10 object-cover object-center"/>
+                                    <h1 className="font-semibold text-lg py-2 text-start">{contactName}</h1>
+                                    </div>
+                                <div className="flex gap-2 p-2">
+                                    <button>
+                                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" className="size-6">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
+                                        </svg>
+                                    </button>
+                                    <button>
+                                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" className="size-6">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
+                                        </svg>
+                                    </button>
+                                </div>
                             </div>
-                            <div>
+                            <div className="h-60 overflow-auto py-2 px-16 space-y-2">
+                                {messages.map((msg, index) => {
+                                    const isSent = msg.from === userId;
+                                    return (
+                                    <div
+                                        key={index}
+                                        className={`flex ${isSent ? 'justify-end' : 'justify-start'}`}
+                                    >
+                                        <div
+                                        className={`rounded-lg px-2 max-w-xs break-words ${
+                                            isSent ? 'bg-green-600 text-white' : 'bg-gray-200 text-black'
+                                        }`}
+                                        >
+                                        <p className="text-md">{msg.text}</p>
+                                        <p className="text-xs ml-4">{"14:02"}</p>
+                                        </div>
+                                    </div>
+                                    );
+                                })}
+                            </div>
 
-                            </div>
-                            <div className="flex w-full">
+
+                            {/* <div className="flex-1 overflow-y-auto px-4 py-2 space-y-2">
+                                {message ? (
+                                    <div>
+                                        <div className="flex justify-end">
+                                            {sentMessage &&(
+                                                <div className="flex bg-green-800 px-2 mx-2 rounded-lg gap-1">
+                                                    <p className="p-1 rounded-lg text-md font-light">{message}</p>
+                                                    <p className="pt-3 text-xs text-slate-400">{"14.02"}</p>
+                                                </div>
+                                            )} 
+                                        </div>
+                                        <div className="flex justify-start">
+                                            {receivedMessages &&(
+                                                <div className="flex bg-green-800 px-2 mx-2 rounded-lg gap-1">
+                                                    <p className="p-1 rounded-lg text-md font-light">{receiveMessage}</p>
+                                                    <p className="pt-3 text-xs text-slate-400">{"14.02"}</p>
+                                                </div>
+                                            )} 
+                                        </div>
+                                    </div>   
+                                ):(
+                                    <div>
+
+                                    </div>
+                                 )} 
+                            </div> */}
+                            <div className="fixed bottom-14 flex py-2 px-4 gap-4 bg-gray-600 rounded-br-lg">
                                 <button>
-                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" className="size-6">
                                         <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
                                     </svg>
                                 </button>
-                                <div>
-                                    <input type="text" placeholder="Type a message" />
+                                <div className="w-80 p-2 bg-gray-800 rounded-lg">
+                                    <input type="text" placeholder="Type a message" className="w-full outline-none border-none" value={message} onChange={(e:any)=>{
+                                        const val = e.target.value
+                                        setMessage(val);
+                                        setSendModel(val.trim().length > 0);
+                                    }}/>
                                 </div>
-                                <button>
-                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
-                                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 18.75a6 6 0 0 0 6-6v-1.5m-6 7.5a6 6 0 0 1-6-6v-1.5m6 7.5v3.75m-3.75 0h7.5M12 15.75a3 3 0 0 1-3-3V4.5a3 3 0 1 1 6 0v8.25a3 3 0 0 1-3 3Z" />
-                                    </svg>
+                                <button onClick={()=>{
+                                    SendMessage();
+                                }}>
+                                    {sendModel ? (
+                                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" className="size-6">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M6 12 3.269 3.125A59.769 59.769 0 0 1 21.485 12 59.768 59.768 0 0 1 3.27 20.875L5.999 12Zm0 0h7.5" />
+                                        </svg>
+                                    ):(
+                                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" className="size-6">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 18.75a6 6 0 0 0 6-6v-1.5m-6 7.5a6 6 0 0 1-6-6v-1.5m6 7.5v3.75m-3.75 0h7.5M12 15.75a3 3 0 0 1-3-3V4.5a3 3 0 1 1 6 0v8.25a3 3 0 0 1-3 3Z" />
+                                        </svg>
+                                    )}
                                 </button>
                             </div>
                         </div>
