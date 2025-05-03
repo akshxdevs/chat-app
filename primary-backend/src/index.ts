@@ -14,7 +14,7 @@ app.use(express.json());
 
 app.use("/api/v1/user",UserRouter);
 app.use("/api/v1/message",messageRouter);
-app.use("/api/v1/chat/",chatRouter);
+app.use("/api/v1/chat",chatRouter);
 
 
 const server = http.createServer(app);

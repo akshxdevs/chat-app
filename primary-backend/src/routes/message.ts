@@ -9,7 +9,7 @@ router.post("/add/:id",async(req,res)=>{
     const createMessagefeed = await prismaClient.messageFeed.create({
         data:{
             contactName:contactName,
-            constactId:contactId,
+            contactId:contactId,
             userId:userId,
         }
     });
@@ -27,7 +27,7 @@ router.get("/get/:id",async(req,res)=>{
     });
     res.json({
         getMessagefeed,
-        message:"Success!!"})
-})
+        message:"Success!!"});
+});
 
 export const messageRouter = router;

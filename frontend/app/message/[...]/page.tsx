@@ -1,20 +1,27 @@
 "use client";
 import { BACKEND_URL } from "@/config";
 import axios from "axios";
+import { useParams } from "next/navigation";
 import { useEffect, useState } from "react"
 
 export default function(){
     const [socket,setSocket] = useState<WebSocket | null>(null);
     const [messages,setMessages] = useState<{from:string; to:string; text:string}[]>([]);
     const [messagefeed,setmessageFeed] = useState<any[]>([]);
-    const [userId,setUserId] = useState<string|null>(null);
     const [profileImg,setProfileImg] = useState<string|null>(null);
-    const [showChatModel,setShowChatModel] = useState(false);
+    const [showChatModel,setShowChatModel] = useState(true);
     const [contactName,setContactName] = useState();
     const [contactProfileImg,setContactProfileImg] = useState();
     const [message,setMessage] = useState("");
     const [sendModel,setSendModel] = useState(false);
     const [receiverId,setReceiverId] = useState();
+    const [chats,setChats] = useState<any[]>([]);
+    
+    const params = useParams();
+    const userId:any = params[""]?.[0];
+    console.log(userId);
+    
+
     
     const getAllMessageFeed = async() => {
         const res = await axios.get(`${BACKEND_URL}/message/get/${userId}`);
@@ -23,12 +30,8 @@ export default function(){
         }
     };
     useEffect(()=>{
-        const getUserId  = localStorage.getItem("userId");
-        if (getUserId) setUserId(getUserId);
         const getProfileImg  = localStorage.getItem("profileImg");
         if (getProfileImg) setProfileImg(getProfileImg);
-    },[]);
-    useEffect(()=>{
         getAllMessageFeed();
     },[userId]);
 
@@ -82,7 +85,30 @@ export default function(){
         setContactProfileImg(profileImg)
         setReceiverId(contactId);
     }      
+    const getUserMessages = async ({ contactId: id }: any) => {
+        try {
+          const res = await axios.get(`${BACKEND_URL}/chat/get/${userId}/${id}`);
+          if (res.data && res.data.getChat) {
+            setChats(res.data.getChat);
+          }
+        } catch (err: any) {
+          console.error("Failed to fetch chat:", err.message);
+        }
+      };
       
+
+      
+    const storeChat = async() => {
+        const res = await axios.post(`${BACKEND_URL}/chat/add/${userId}`,{            
+            receiverId:receiverId,
+            text:message
+        });
+        console.log(receiverId);
+        if (res.data) {
+            console.log("Message Stored Successfully in the db");
+        }
+    }
+    
     return <div className="flex flex-col justify-center items-center h-screen">
     <div className="bg-gray-800 border border-gray-500 rounded-lg">
         <div className="flex justify-between h-[600px]">
@@ -118,7 +144,7 @@ export default function(){
                             </svg>
                         </button>
                         <button>
-                            {profileImg ? (
+                            {profileImg === "" ? (
                                 <div>
                                     <img src={profileImg} alt="ProfilePic" className="rounded-full w-fit h-8 border border-gray-700 object-cover object-center"/>
                                 </div>
@@ -178,26 +204,26 @@ export default function(){
                 <div>
                     {messagefeed.length>0 ? (
                         <div>
-                                {messagefeed.map((feed,index)=>(
-                                    <div key={index} className="border-b border-gray-700 pt-2 px-1">
-                                        <button className="flex gap-4" onClick={()=>{
-                                            setShowChatModel(true)
-                                            chatDetails({contactName:feed.contactName,profileImg:feed.profilePic,contactId:feed.id})}}>
-                                            <img src={feed.profilePic} alt="profilePic" className="border border-gray-700 rounded-full w-fit h-10 object-cover object-center"/>
-                                            <div className="flex justify-between gap-32">
-                                                <div className="flex flex-col">
-                                                    <h1 className="font-semibold text-lg text-start">{feed.contactName}</h1>
-                                                    <p className="text-sm font-semibold">{"• unRead messages"}</p>
-                                                </div>
-                                                <div className="flex flex-col justify-center items-center py-2">
-                                                    <p className="text-xs font-semibold py-1">{"17.45"}</p>
-                                                    <p className="w-5 h-5 text-[12px] bg-green-700 rounded-full text-center py-[1px]">{"1"}</p>
-                                                </div>
+                            {messagefeed.map((feed,index)=>(
+                                <div key={index} className="border-b border-gray-700 pt-2 px-1">
+                                    <button className="flex gap-4" onClick={()=>{
+                                        setShowChatModel(true)
+                                        getUserMessages({contactId:feed.contactId});
+                                        chatDetails({contactName:feed.contactName,profileImg:feed.profilePic,contactId:feed.contactId})}}>
+                                        <img src={feed.profilePic} alt="profilePic" className="border border-gray-700 rounded-full w-10 h-10 object-cover object-center"/>
+                                        <div className="flex justify-between gap-32">
+                                            <div className="flex flex-col">
+                                                <h1 className="font-semibold text-lg text-start">{feed.contactName}</h1>
+                                                <p className="text-sm font-semibold">{"• unRead messages"}</p>
                                             </div>
-                                        </button>
-                                    </div>
-                                ))} 
-                           
+                                            <div className="flex flex-col justify-center items-center py-2">
+                                                <p className="text-xs font-semibold py-1">{"17.45"}</p>
+                                                <p className="w-5 h-5 text-[12px] bg-green-700 rounded-full text-center py-[1px]">{"1"}</p>
+                                            </div>
+                                        </div>
+                                    </button>
+                                </div>
+                            ))} 
                         </div>
                     ):(
                         <div className="flex justify-center items-center h-80">
@@ -212,7 +238,7 @@ export default function(){
                         <div className="flex flex-col justify-between gap-[242px]">
                             <div className="flex justify-between gap-4 p-2 bg-gray-600">
                                 <div className="flex gap-4">
-                                    <img src={contactProfileImg} alt="profilePic" className="border bg-black border-gray-700 rounded-full w-fit h-10 object-cover object-center"/>
+                                    <img src={contactProfileImg} alt="profilePic" className="border bg-black border-gray-700 rounded-full w-10 h-10 object-cover object-center"/>
                                     <h1 className="font-semibold text-lg py-2 text-start">{contactName}</h1>
                                     </div>
                                 <div className="flex gap-2 p-2">
@@ -228,7 +254,27 @@ export default function(){
                                     </button>
                                 </div>
                             </div>
-                            <div className="h-60 overflow-auto py-2 px-16 space-y-2">
+                            <div className="h-60 overflow-auto py-2 px-12 space-y-2">
+                                {chats.map((msg, index) => {
+                                    const sentMsg = msg.senderId === userId;
+                                    return (
+                                    <div
+                                        key={index}
+                                        className={`flex ${sentMsg ? 'justify-end' : 'justify-start'}`}
+                                    >
+                                        <div
+                                        className={`rounded-lg px-2 max-w-xs break-words ${
+                                            sentMsg ? 'bg-green-800 text-white' : 'bg-gray-200 text-black'
+                                        }`}
+                                        >
+                                        <p className="text-md">{msg.chat}</p>
+                                        <p className="text-xs ml-4">                                
+                                            {new Date(msg.timeStamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                        </p>
+                                        </div>
+                                    </div>
+                                    );
+                                })}
                                 {messages.map((msg, index) => {
                                     const isSent = msg.from === userId;
                                     return (
@@ -238,7 +284,7 @@ export default function(){
                                     >
                                         <div
                                         className={`rounded-lg px-2 max-w-xs break-words ${
-                                            isSent ? 'bg-green-600 text-white' : 'bg-gray-200 text-black'
+                                            isSent ? 'bg-green-800 text-white' : 'bg-gray-200 text-black'
                                         }`}
                                         >
                                         <p className="text-md">{msg.text}</p>
@@ -248,34 +294,6 @@ export default function(){
                                     );
                                 })}
                             </div>
-
-
-                            {/* <div className="flex-1 overflow-y-auto px-4 py-2 space-y-2">
-                                {message ? (
-                                    <div>
-                                        <div className="flex justify-end">
-                                            {sentMessage &&(
-                                                <div className="flex bg-green-800 px-2 mx-2 rounded-lg gap-1">
-                                                    <p className="p-1 rounded-lg text-md font-light">{message}</p>
-                                                    <p className="pt-3 text-xs text-slate-400">{"14.02"}</p>
-                                                </div>
-                                            )} 
-                                        </div>
-                                        <div className="flex justify-start">
-                                            {receivedMessages &&(
-                                                <div className="flex bg-green-800 px-2 mx-2 rounded-lg gap-1">
-                                                    <p className="p-1 rounded-lg text-md font-light">{receiveMessage}</p>
-                                                    <p className="pt-3 text-xs text-slate-400">{"14.02"}</p>
-                                                </div>
-                                            )} 
-                                        </div>
-                                    </div>   
-                                ):(
-                                    <div>
-
-                                    </div>
-                                 )} 
-                            </div> */}
                             <div className="fixed bottom-14 flex py-2 px-4 gap-4 bg-gray-600 rounded-br-lg">
                                 <button>
                                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" className="size-6">
@@ -291,6 +309,7 @@ export default function(){
                                 </div>
                                 <button onClick={()=>{
                                     SendMessage();
+                                    storeChat();
                                 }}>
                                     {sendModel ? (
                                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" className="size-6">

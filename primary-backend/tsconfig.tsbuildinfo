@@ -1,1 +1,1 @@
-{"root":["./src/config.ts","./src/index.ts","./src/socket.ts","./src/db/db.ts","./src/kafka/consumer.ts","./src/kafka/producer.ts","./src/redis/init.ts","./src/routes/message.ts","./src/routes/user.ts","./src/types/index.ts"],"version":"5.8.3"}
+{"root":["./src/config.ts","./src/index.ts","./src/socket.ts","./src/db/db.ts","./src/kafka/consumer.ts","./src/kafka/producer.ts","./src/redis/init.ts","./src/routes/chats.ts","./src/routes/message.ts","./src/routes/user.ts","./src/types/index.ts"],"version":"5.8.3"}

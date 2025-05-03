@@ -9,35 +9,49 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.messageRouter = void 0;
+exports.chatRouter = void 0;
 const express_1 = require("express");
 const db_1 = require("../db/db");
 const router = (0, express_1.Router)();
 router.post("/add/:id", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const userId = req.params.id;
-    const { contactName, contactId } = req.body;
-    const createMessagefeed = yield db_1.prismaClient.messageFeed.create({
+    const { receiverId, text } = req.body;
+    const createChat = yield db_1.prismaClient.chats.create({
         data: {
-            contactName: contactName,
-            contactId: contactId,
-            userId: userId,
+            senderId: userId,
+            receiverId: receiverId,
+            chat: text
         }
     });
     res.json({
-        createMessagefeed,
+        createChat,
         message: "Success!!"
     });
 }));
-router.get("/get/:id", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    const userId = req.params.id;
-    const getMessagefeed = yield db_1.prismaClient.messageFeed.findMany({
-        where: {
-            userId: userId,
-        }
-    });
-    res.json({
-        getMessagefeed,
-        message: "Success!!"
-    });
+router.get("/get/:userId/:contactId", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const { userId, contactId } = req.params;
+    try {
+        const getChat = yield db_1.prismaClient.chats.findMany({
+            where: {
+                OR: [
+                    {
+                        senderId: userId,
+                        receiverId: contactId,
+                    },
+                    {
+                        senderId: contactId,
+                        receiverId: userId,
+                    },
+                ],
+            },
+            orderBy: {
+                timeStamp: "asc",
+            },
+        });
+        res.json({ getChat, message: "Success!!" });
+    }
+    catch (error) {
+        res.status(500).json({ message: "Error fetching chats", error });
+    }
 }));
-exports.messageRouter = router;
+exports.chatRouter = router;

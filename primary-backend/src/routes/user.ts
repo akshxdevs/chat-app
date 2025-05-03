@@ -9,7 +9,7 @@ const redis = new Redis({
     host:"localhost",
     port:6379
 });
-const OTP_LIMIT = 3;
+const OTP_LIMIT = 5;
 const OTP_EXPIRY = 100;
 
 // router.post("/signup",async(req,res)=>{
@@ -199,4 +199,6 @@ router.post("/verify-otp",async(req,res)=>{
 //     }
 // })
 
+
+  
 export const UserRouter = router;

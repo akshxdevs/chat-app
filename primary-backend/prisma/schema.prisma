@@ -15,22 +15,42 @@ datasource db {
 }
 
 model User {
-  id String @id @default(uuid())
-  username String? @unique
-  name String?
-  mobileNo String @unique
-  profileImg String?
-  bio String?
+  id          String        @id @default(uuid())
+  username    String?       @unique
+  name        String?
+  mobileNo    String        @unique
+  profileImg  String?
+  bio         String?
   messageFeed MessageFeed[]
+  sentMessages Chats[]  
 }
 
-model MessageFeed  {
-  id String @id @default(uuid())
-  contactName String @unique
-  constactId String @unique
-  profilePic String?
-  phoneNo  String? @unique
-  bio String?
-  userId String
-  user User @relation(fields: [userId],references: [id]) 
+model MessageFeed {
+  id         String   @id @default(uuid())
+  contactName String
+  contactId   String
+  profilePic  String?
+  phoneNo     String?
+  bio         String?
+  userId      String
+  timeStamp   DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+}
+
+model Chats {
+  id          String   @id @default(uuid())
+  senderId    String
+  receiverId  String
+  chat        String
+  isRead      Boolean  @default(false)
+  timeStamp   DateTime @default(now())
+
+  sender   User @relation(fields: [senderId], references: [id])
+
+  @@index([senderId])
+  @@index([receiverId])
+  @@index([timeStamp])
 }
