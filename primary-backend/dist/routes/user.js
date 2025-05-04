@@ -202,4 +202,19 @@ router.post("/verify-otp", (req, res) => __awaiter(void 0, void 0, void 0, funct
 //         res.status(411).json({message:"Something went wrong!!"})   
 //     }
 // })
+router.post("/search/:name", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const searchName = req.params.name;
+    const user = yield db_1.prismaClient.user.findMany({
+        where: {
+            name: searchName
+        }
+    });
+    if (!user) {
+        res.status(404).json({ message: "User Not Found!!" });
+    }
+    res.json({
+        user,
+        message: "User fetched successfully!!"
+    });
+}));
 exports.UserRouter = router;

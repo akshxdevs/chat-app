@@ -82,7 +82,7 @@ const setUpSocketServer = (server) => {
                     return;
                 const parsed = JSON.parse(message.value.toString());
                 const { from, to, text, group } = parsed;
-                const payload = { from, text };
+                const payload = { from, text, to };
                 if (group) {
                     Broadcast(group, payload);
                     console.log(`Message from ${from} broadcasted to group ${group}`);

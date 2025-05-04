@@ -9,20 +9,17 @@ export default function(){
     const [messages,setMessages] = useState<{from:string; to:string; text:string}[]>([]);
     const [messagefeed,setmessageFeed] = useState<any[]>([]);
     const [profileImg,setProfileImg] = useState<string|null>(null);
-    const [showChatModel,setShowChatModel] = useState(true);
+    const [showChatModel,setShowChatModel] = useState(false);
     const [contactName,setContactName] = useState();
     const [contactProfileImg,setContactProfileImg] = useState();
     const [message,setMessage] = useState("");
     const [sendModel,setSendModel] = useState(false);
     const [receiverId,setReceiverId] = useState();
     const [chats,setChats] = useState<any[]>([]);
-    
+    const [chatFeedModel,setChatFeedModel] = useState(false);
+    const [searchedUsers,setSearchedUsers] = useState<any[]>([]);
     const params = useParams();
     const userId:any = params[""]?.[0];
-    console.log(userId);
-    
-
-    
     const getAllMessageFeed = async() => {
         const res = await axios.get(`${BACKEND_URL}/message/get/${userId}`);
         if (res.data) {
@@ -81,9 +78,12 @@ export default function(){
         }
       };
     const chatDetails = ({contactName,profileImg,contactId}:any) => {
+        console.log(contactName,contactId,profileImg);
+        
         setContactName(contactName);
         setContactProfileImg(profileImg)
         setReceiverId(contactId);
+        
     }      
     const getUserMessages = async ({ contactId: id }: any) => {
         try {
@@ -109,6 +109,13 @@ export default function(){
         }
     }
     
+    const searchUser = async(value:any) => {
+        const res = await axios.post(`${BACKEND_URL}/user/search/${value}`);
+        if (res.data) {
+            console.log(res.data.user);
+            setSearchedUsers(res.data.user)
+        }
+    }
     return <div className="flex flex-col justify-center items-center h-screen">
     <div className="bg-gray-800 border border-gray-500 rounded-lg">
         <div className="flex justify-between h-[600px]">
@@ -160,6 +167,15 @@ export default function(){
                 </div>
             </div>
             <div className="w-96 border-r bg-[#041016a6] border-gray-500 py-4 px-2">
+                <div className="fixed bottom-24 left-[700px]">
+                    <button onClick={()=>{
+                        setChatFeedModel(true)
+                    }}>
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" className="size-9">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M20.25 8.511c.884.284 1.5 1.128 1.5 2.097v4.286c0 1.136-.847 2.1-1.98 2.193-.34.027-.68.052-1.02.072v3.091l-3-3c-1.354 0-2.694-.055-4.02-.163a2.115 2.115 0 0 1-.825-.242m9.345-8.334a2.126 2.126 0 0 0-.476-.095 48.64 48.64 0 0 0-8.048 0c-1.131.094-1.976 1.057-1.976 2.192v4.286c0 .837.46 1.58 1.155 1.951m9.345-8.334V6.637c0-1.621-1.152-3.026-2.76-3.235A48.455 48.455 0 0 0 11.25 3c-2.115 0-4.198.137-6.24.402-1.608.209-2.76 1.614-2.76 3.235v6.226c0 1.621 1.152 3.026 2.76 3.235.577.075 1.157.14 1.74.194V21l4.155-4.155" />
+                        </svg>
+                    </button>
+                </div>
                 <div className="flex justify-between ">
                     <div>
                         <h1>Chats</h1>
@@ -184,53 +200,87 @@ export default function(){
                                 <path stroke-linecap="round" stroke-linejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
                             </svg>
                         </button>
-                        <input type="text" placeholder="Search" className="w-full outline-none border-none"/>
+                        <input type="text" placeholder="Search" className="w-full outline-none border-none" onChange={(e:any)=>{
+                            const value = e.target.value;
+                            setChatFeedModel(value.trim().length > 1);
+                            searchUser(value);
+                        }}/>
                     </div>
                 </div>
-                <div className="flex justify-between border-b px-5 pb-2 border-gray-800 "> 
-                    <div className="border px-2 py-1 rounded-lg">
-                        <h1>All</h1>
-                    </div>
-                    <div className="border px-2 py-1 rounded-lg">
-                        <h1>unread</h1>
-                    </div>
-                    <div className="border px-2 py-1 rounded-lg">
-                        <h1>Favourites</h1>
-                    </div>
-                    <div className="border px-2 py-1 rounded-lg">
-                        <h1>Group</h1>
-                    </div>
-                </div>
-                <div>
-                    {messagefeed.length>0 ? (
-                        <div>
-                            {messagefeed.map((feed,index)=>(
-                                <div key={index} className="border-b border-gray-700 pt-2 px-1">
-                                    <button className="flex gap-4" onClick={()=>{
-                                        setShowChatModel(true)
-                                        getUserMessages({contactId:feed.contactId});
-                                        chatDetails({contactName:feed.contactName,profileImg:feed.profilePic,contactId:feed.contactId})}}>
-                                        <img src={feed.profilePic} alt="profilePic" className="border border-gray-700 rounded-full w-10 h-10 object-cover object-center"/>
-                                        <div className="flex justify-between gap-32">
-                                            <div className="flex flex-col">
-                                                <h1 className="font-semibold text-lg text-start">{feed.contactName}</h1>
-                                                <p className="text-sm font-semibold">{"• unRead messages"}</p>
-                                            </div>
-                                            <div className="flex flex-col justify-center items-center py-2">
-                                                <p className="text-xs font-semibold py-1">{"17.45"}</p>
-                                                <p className="w-5 h-5 text-[12px] bg-green-700 rounded-full text-center py-[1px]">{"1"}</p>
-                                            </div>
+                {chatFeedModel ?(
+                    <div>
+                        {searchedUsers.length > 0 ?(
+                            <div>
+                                {searchedUsers.map((user,index)=>(
+                                        <div key={index} className="border-b border-gray-700 pt-2 px-1">
+                                            <button className="flex gap-4" onClick={()=>{
+                                                chatDetails({contactName:user.name,profileImg:user.profileImg,contactId:user.id});
+                                                setShowChatModel(true);
+                                            }}>
+                                                <img src={user.profileImg} alt="profilePic" className="border border-gray-700 rounded-full w-10 h-10 object-cover object-center"/>
+                                                <div className="flex justify-between gap-32">
+                                                    <div className="flex flex-col">
+                                                        <h1 className="font-semibold text-lg text-start">{user.name}</h1>
+                                                    </div>
+                                                </div>
+                                            </button>
                                         </div>
-                                    </button>
+                                ))}
+                            </div>
+                        ):(
+                            <div>
+
+                            </div>
+                        )}
+                    </div>
+                ) : (
+                    <div>
+                        <div className="flex justify-between border-b px-5 pb-2 border-gray-800 "> 
+                            <div className="border px-2 py-1 rounded-lg">
+                                <h1>All</h1>
+                            </div>
+                            <div className="border px-2 py-1 rounded-lg">
+                                <h1>unread</h1>
+                            </div>
+                            <div className="border px-2 py-1 rounded-lg">
+                                <h1>Favourites</h1>
+                            </div>
+                            <div className="border px-2 py-1 rounded-lg">
+                                <h1>Group</h1>
+                            </div>
+                        </div>
+                        <div>
+                            {messagefeed.length>0 ? (
+                                <div>
+                                    {messagefeed.map((feed,index)=>(
+                                        <div key={index} className="border-b border-gray-700 pt-2 px-1">
+                                            <button className="flex gap-4" onClick={()=>{
+                                                setShowChatModel(true)
+                                                getUserMessages({contactId:feed.contactId});
+                                                chatDetails({contactName:feed.contactName,profileImg:feed.profilePic,contactId:feed.contactId})}}>
+                                                <img src={feed.profilePic} alt="profilePic" className="border border-gray-700 rounded-full w-10 h-10 object-cover object-center"/>
+                                                <div className="flex justify-between gap-32">
+                                                    <div className="flex flex-col">
+                                                        <h1 className="font-semibold text-lg text-start">{feed.contactName}</h1>
+                                                        <p className="text-sm font-semibold">{"• unRead messages"}</p>
+                                                    </div>
+                                                    <div className="flex flex-col justify-center items-center py-2">
+                                                        <p className="text-xs font-semibold py-1">{"17.45"}</p>
+                                                        <p className="w-5 h-5 text-[12px] bg-green-700 rounded-full text-center py-[1px]">{"1"}</p>
+                                                    </div>
+                                                </div>
+                                            </button>
+                                        </div>
+                                    ))} 
                                 </div>
-                            ))} 
+                            ):(
+                                <div className="flex justify-center items-center h-80">
+                                    No Messages
+                                </div>
+                            )}
                         </div>
-                    ):(
-                        <div className="flex justify-center items-center h-80">
-                            No Messages
-                        </div>
-                    )}
-                </div>
+                    </div>
+                )}
             </div>
             <div className="">
                 {showChatModel ? (

@@ -199,6 +199,20 @@ router.post("/verify-otp",async(req,res)=>{
 //     }
 // })
 
+router.post("/search/:name",async(req,res)=>{
+    const searchName = req.params.name;
+    const user = await prismaClient.user.findMany({
+        where:{
+            name:searchName
+        }
+    })
+    if (!user) {
+        res.status(404).json({message:"User Not Found!!"})
+    }res.json({
+        user,
+        message:"User fetched successfully!!"
+    })
+})
 
   
 export const UserRouter = router;
