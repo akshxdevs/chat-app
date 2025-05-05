@@ -18,17 +18,15 @@ export default function(){
     const [chats,setChats] = useState<any[]>([]);
     const [chatFeedModel,setChatFeedModel] = useState(false);
     const [searchedUsers,setSearchedUsers] = useState<any[]>([]);
+    const [contactId,setContactId] = useState();
+    const [pendingMsg,setPendingMsg] = useState();
     const params = useParams();
     const userId:any = params[""]?.[0];
-    const getAllMessageFeed = async() => {
-        const res = await axios.get(`${BACKEND_URL}/message/get/${userId}`);
-        if (res.data) {
-            setmessageFeed(res.data.getMessagefeed);
-        }
-    };
+
     useEffect(()=>{
         const getProfileImg  = localStorage.getItem("profileImg");
         if (getProfileImg) setProfileImg(getProfileImg);
+        fetchMessages();
         getAllMessageFeed();
     },[userId]);
 
@@ -66,7 +64,12 @@ export default function(){
           ws.close();
         };
       }, [userId]);
-    
+      const getAllMessageFeed = async() => {
+        const res = await axios.get(`${BACKEND_URL}/message/get/${userId}`);
+        if (res.data) {
+            setmessageFeed(res.data.getMessagefeed);
+        }
+      };
       const SendMessage = () => {
         if (socket && socket.readyState === WebSocket.OPEN && message.trim() && receiverId) {
           const msg:any = { from: userId, to: receiverId, text: message };
@@ -77,14 +80,15 @@ export default function(){
           console.warn('WebSocket is not open or message is empty');
         }
       };
-    const chatDetails = ({contactName,profileImg,contactId}:any) => {
-        console.log(contactName,contactId,profileImg);
-        
+      const chatDetails = ({contactName,profileImg,contactId}:any) => {
         setContactName(contactName);
-        setContactProfileImg(profileImg)
+        setContactProfileImg(profileImg);
         setReceiverId(contactId);
-        
-    }      
+        setContactId(contactId);
+        getAllMessageFeed();
+    }     
+    console.log(contactId);
+    
     const getUserMessages = async ({ contactId: id }: any) => {
         try {
           const res = await axios.get(`${BACKEND_URL}/chat/get/${userId}/${id}`);
@@ -103,7 +107,6 @@ export default function(){
             receiverId:receiverId,
             text:message
         });
-        console.log(receiverId);
         if (res.data) {
             console.log("Message Stored Successfully in the db");
         }
@@ -112,10 +115,24 @@ export default function(){
     const searchUser = async(value:any) => {
         const res = await axios.post(`${BACKEND_URL}/user/search/${value}`);
         if (res.data) {
-            console.log(res.data.user);
             setSearchedUsers(res.data.user)
         }
     }
+    const fetchMessages = async () => {
+        try {
+          const res = await axios.get(`${BACKEND_URL}/message/pendingmsg/${userId}`);
+          if (res.data.success) {
+            console.log("Fetched Messages:", res.data.messages);
+            setPendingMsg(res.data.messages);
+            console.log(res.data.messages);
+            
+          }
+        } catch (err) {
+          console.error("Failed to fetch messages", err);
+        }
+      };
+      console.log(pendingMsg);
+      
     return <div className="flex flex-col justify-center items-center h-screen">
     <div className="bg-gray-800 border border-gray-500 rounded-lg">
         <div className="flex justify-between h-[600px]">
@@ -285,7 +302,7 @@ export default function(){
             <div className="">
                 {showChatModel ? (
                     <div className="w-[432px] h-full flex flex-col bg-[#041016a6]">
-                        <div className="flex flex-col justify-between gap-[242px]">
+                        <div className="flex flex-col justify-between gap-12">
                             <div className="flex justify-between gap-4 p-2 bg-gray-600">
                                 <div className="flex gap-4">
                                     <img src={contactProfileImg} alt="profilePic" className="border bg-black border-gray-700 rounded-full w-10 h-10 object-cover object-center"/>
@@ -304,25 +321,31 @@ export default function(){
                                     </button>
                                 </div>
                             </div>
-                            <div className="h-60 overflow-auto py-2 px-12 space-y-2">
+                            <div className="h-96 overflow-y-auto py-2 px-12 space-y-2 scrollbar-hide">
                                 {chats.map((msg, index) => {
-                                    const sentMsg = msg.senderId === userId;
+                                    const isSentByMe = msg.senderId === userId;
+                                    const isRelatedToContact =
+                                        msg.senderId === contactId || msg.receiverId === contactId;
+                                    if (!isRelatedToContact) return null; 
                                     return (
-                                    <div
-                                        key={index}
-                                        className={`flex ${sentMsg ? 'justify-end' : 'justify-start'}`}
-                                    >
                                         <div
-                                        className={`rounded-lg px-2 max-w-xs break-words ${
-                                            sentMsg ? 'bg-green-800 text-white' : 'bg-gray-200 text-black'
-                                        }`}
+                                        key={index}
+                                        className={`flex ${isSentByMe ? 'justify-end' : 'justify-start'}`}
                                         >
-                                        <p className="text-md">{msg.chat}</p>
-                                        <p className="text-xs ml-4">                                
-                                            {new Date(msg.timeStamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                        </p>
+                                        <div
+                                            className={`rounded-lg px-2 max-w-xs break-words ${
+                                            isSentByMe ? 'bg-green-800 text-white' : 'bg-gray-200 text-black'
+                                            }`}
+                                        >
+                                            <p className="text-md">{msg.chat}</p>
+                                            <p className="text-xs ml-4">
+                                            {new Date(msg.timeStamp).toLocaleTimeString([], {
+                                                hour: '2-digit',
+                                                minute: '2-digit',
+                                            })}
+                                            </p>
                                         </div>
-                                    </div>
+                                        </div>
                                     );
                                 })}
                                 {messages.map((msg, index) => {
@@ -344,7 +367,7 @@ export default function(){
                                     );
                                 })}
                             </div>
-                            <div className="fixed bottom-14 flex py-2 px-4 gap-4 bg-gray-600 rounded-br-lg">
+                            <div className="fixed bottom-[265px] flex py-2 px-4 gap-4 bg-gray-600 rounded-br-lg">
                                 <button>
                                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" className="size-6">
                                         <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />

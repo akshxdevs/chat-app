@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { prismaClient } from "../db/db";
+import { redisClient } from "../redis/init";
 
 const router = Router();
 
@@ -29,5 +30,20 @@ router.get("/get/:id",async(req,res)=>{
         getMessagefeed,
         message:"Success!!"});
 });
+
+router.get("/pendingmsg/:id",async(req,res)=>{
+    const id = req.params.id;
+    try {
+        const msg = await redisClient.lrange(`message:${id}`,0,-1)
+        const parsedMsg = msg.map(msg => JSON.parse(msg));
+        res.json({
+            sucess:true,
+            message:parsedMsg
+        })
+    } catch (error) {
+        console.error("redis error",error);
+    }
+
+})
 
 export const messageRouter = router;
