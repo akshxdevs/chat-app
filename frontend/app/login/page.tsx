@@ -31,12 +31,12 @@ export default function () {
                                 const userId = res.data.user.id
                                 console.log("OTP Verification Successfully");
                                 toast.success("✅ User Login Sucessfull!");
-                                router.push(`/message/${userId}`);
                                 localStorage.setItem("userId",res.data.user.id);
                                 localStorage.setItem("token",res.data.token);
                                 localStorage.setItem("mobileNo",res.data.user.phoneNo);
-                                localStorage.setItem("profileImg",res.data.user.profileImg);
+                                localStorage.setItem("profileImg",res.data.user.profileImg || "");
                                 localStorage.setItem("name",res.data.user.name);
+                                router.push(`/message/${userId}`);
                             }
                         } catch (error) {
                             console.error(error);

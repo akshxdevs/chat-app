@@ -2,13 +2,13 @@
 import { BACKEND_URL } from "@/config";
 import axios from "axios";
 import { useParams } from "next/navigation";
-import { useEffect, useState } from "react"
+import { use, useEffect, useState } from "react"
 
 export default function(){
     const [socket,setSocket] = useState<WebSocket | null>(null);
     const [messages,setMessages] = useState<{from:string; to:string; text:string}[]>([]);
     const [messagefeed,setmessageFeed] = useState<any[]>([]);
-    const [profileImg,setProfileImg] = useState<string|null>(null);
+    const [profileImg,setProfileImg] = useState<string>("");
     const [showChatModel,setShowChatModel] = useState(false);
     const [contactName,setContactName] = useState();
     const [contactProfileImg,setContactProfileImg] = useState();
@@ -19,51 +19,58 @@ export default function(){
     const [chatFeedModel,setChatFeedModel] = useState(false);
     const [searchedUsers,setSearchedUsers] = useState<any[]>([]);
     const [contactId,setContactId] = useState();
-    const [pendingMsg,setPendingMsg] = useState();
+    const [pendingMsg,setPendingMsg] = useState<any[]>([]);
     const params = useParams();
     const userId:any = params[""]?.[0];
+    const now = new Date();
+    const timeNow = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit'});
 
     useEffect(()=>{
         const getProfileImg  = localStorage.getItem("profileImg");
         if (getProfileImg) setProfileImg(getProfileImg);
-        fetchMessages();
-        getAllMessageFeed();
     },[userId]);
 
-    useEffect(() => {
+    useEffect(()=>{
+        fetchMessages();
+        getAllMessageFeed();
+    },[])
+
+    const connectWebSocket = () => {
         if (!userId) return;
     
         const ws = new WebSocket(`ws://localhost:3000/${userId}`);
     
         ws.onopen = () => {
-          console.log('WebSocket connected');
-          setSocket(ws);
+        console.log('WebSocket connected');
+        setSocket(ws);
         };
     
         ws.onmessage = (event) => {
-          try {
+        try {
             const received = JSON.parse(event.data);
     
             const fullMessage = {
-              ...received,
-              to: userId,
+            ...received,
+            to: userId,
             };
     
             setMessages((prev) => [...prev, fullMessage]);
             console.log('Received:', fullMessage);
-          } catch (err) {
+        } catch (err) {
             console.error('Invalid JSON from server:', event.data);
-          }
+        }
         };
     
         ws.onclose = () => {
-          console.log('WebSocket disconnected');
+        console.log('WebSocket disconnected');
         };
     
         return () => {
-          ws.close();
+        ws.close();
+        console.log('WebSocket cleanup');
         };
-      }, [userId]);
+    };
+    
       const getAllMessageFeed = async() => {
         const res = await axios.get(`${BACKEND_URL}/message/get/${userId}`);
         if (res.data) {
@@ -87,8 +94,6 @@ export default function(){
         setContactId(contactId);
         getAllMessageFeed();
     }     
-    console.log(contactId);
-    
     const getUserMessages = async ({ contactId: id }: any) => {
         try {
           const res = await axios.get(`${BACKEND_URL}/chat/get/${userId}/${id}`);
@@ -121,18 +126,13 @@ export default function(){
     const fetchMessages = async () => {
         try {
           const res = await axios.get(`${BACKEND_URL}/message/pendingmsg/${userId}`);
-          if (res.data.success) {
-            console.log("Fetched Messages:", res.data.messages);
-            setPendingMsg(res.data.messages);
-            console.log(res.data.messages);
-            
+          if (res.data) {
+            setPendingMsg(res.data.message);
           }
         } catch (err) {
           console.error("Failed to fetch messages", err);
         }
       };
-      console.log(pendingMsg);
-      
     return <div className="flex flex-col justify-center items-center h-screen">
     <div className="bg-gray-800 border border-gray-500 rounded-lg">
         <div className="flex justify-between h-[600px]">
@@ -168,9 +168,9 @@ export default function(){
                             </svg>
                         </button>
                         <button>
-                            {profileImg === "" ? (
+                            {profileImg ? (
                                 <div>
-                                    <img src={profileImg} alt="ProfilePic" className="rounded-full w-fit h-8 border border-gray-700 object-cover object-center"/>
+                                    <img src={profileImg} className="rounded-full w-fit h-8 border border-gray-700 object-cover object-center"/>
                                 </div>
                             ):(
                                 <div>
@@ -268,24 +268,51 @@ export default function(){
                         </div>
                         <div>
                             {messagefeed.length>0 ? (
-                                <div>
+                                <div className="border-b border-gray-700 pt-2 px-1">
                                     {messagefeed.map((feed,index)=>(
-                                        <div key={index} className="border-b border-gray-700 pt-2 px-1">
-                                            <button className="flex gap-4" onClick={()=>{
+                                        <div key={index}>
+                                            <button onClick={()=>{
                                                 setShowChatModel(true)
                                                 getUserMessages({contactId:feed.contactId});
-                                                chatDetails({contactName:feed.contactName,profileImg:feed.profilePic,contactId:feed.contactId})}}>
-                                                <img src={feed.profilePic} alt="profilePic" className="border border-gray-700 rounded-full w-10 h-10 object-cover object-center"/>
-                                                <div className="flex justify-between gap-32">
-                                                    <div className="flex flex-col">
-                                                        <h1 className="font-semibold text-lg text-start">{feed.contactName}</h1>
-                                                        <p className="text-sm font-semibold">{"• unRead messages"}</p>
+                                                chatDetails({contactName:feed.contactName,profileImg:feed.profilePic,contactId:feed.contactId})
+                                                connectWebSocket();
+                                                setPendingMsg([]);
+                                                }}>
+                                                {pendingMsg && pendingMsg.length > 0 ? (
+                                                    <div className="flex gap-6">
+                                                        <img src={feed.profilePic} alt="profilePic" className="border border-gray-700 rounded-full w-10 h-10 object-cover object-center"/>
+                                                        {pendingMsg && pendingMsg.length > 0 && (
+                                                        <div className="flex gap-52 pb-2">
+                                                            <div className="flex flex-col">
+                                                            <h1 className="font-bold text-lg text-start text-slate-400">{feed.contactName}</h1>
+                                                            <p className="text-sm font-semibold text-slate-200">
+                                                                • {pendingMsg[0]?.text || "No message"}
+                                                            </p>
+                                                            </div>
+                                                            <div className="flex flex-col justify-center items-center">
+                                                            <p className="text-xs font-semibold py-1">{pendingMsg[0][0]?.timestamp || "17:45"}</p>
+                                                            <p className="w-5 h-5 text-[12px] bg-green-700 rounded-full text-center py-[1px]">
+                                                                {pendingMsg.length}
+                                                            </p>
+                                                            </div>
+                                                        </div>
+                                                        )}
                                                     </div>
-                                                    <div className="flex flex-col justify-center items-center py-2">
-                                                        <p className="text-xs font-semibold py-1">{"17.45"}</p>
-                                                        <p className="w-5 h-5 text-[12px] bg-green-700 rounded-full text-center py-[1px]">{"1"}</p>
+                                                ) : (
+                                                    <div className="flex gap-6 pb-2">
+                                                        <img src={feed.profilePic} alt="profilePic" className="border border-gray-700 rounded-full w-10 h-10 object-cover object-center"/>
+                                                        <div className="flex gap-52 pb-2">
+                                                            <div className="flex flex-col">
+                                                                <h1 className="font-bold text-lg text-start text-slate-400">{feed.contactName}</h1>
+                                                                <p className="text-sm font-semibold text-slate-200">{}</p>
+                                                            </div>
+                                                            <div className="flex flex-col justify-center items-center">
+                                                                <p className="text-xs font-semibold py-1">{}</p>
+                                                                <p className="w-5 h-5 text-[12px]  rounded-full text-center py-[1px]">{""}</p>
+                                                            </div>
+                                                        </div>
                                                     </div>
-                                                </div>
+                                                )}
                                             </button>
                                         </div>
                                     ))} 
@@ -361,7 +388,7 @@ export default function(){
                                         }`}
                                         >
                                         <p className="text-md">{msg.text}</p>
-                                        <p className="text-xs ml-4">{"14:02"}</p>
+                                        <p className="text-xs ml-4">{timeNow}</p>
                                         </div>
                                     </div>
                                     );
