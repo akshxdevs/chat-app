@@ -81,8 +81,10 @@ const setUpSocketServer = (server) => {
                 if (!message.value)
                     return;
                 const parsed = JSON.parse(message.value.toString());
-                const { from, to, text, group } = parsed;
-                const payload = { from, text, to };
+                const { from, to, text, group, } = parsed;
+                const date = new Date();
+                const timeStamp = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false });
+                const payload = { from, text, to, timeStamp };
                 if (group) {
                     Broadcast(group, payload);
                     console.log(`Message from ${from} broadcasted to group ${group}`);

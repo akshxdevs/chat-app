@@ -41,6 +41,20 @@ router.get("/get/:id", (req, res) => __awaiter(void 0, void 0, void 0, function*
         message: "Success!!"
     });
 }));
+router.get("/getcontact/:id/:contactId", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const userId = req.params.id;
+    const contactId = req.params.contactId;
+    const contactExist = yield db_1.prismaClient.messageFeed.findFirst({
+        where: {
+            userId: userId,
+            contactId: contactId,
+        }
+    });
+    res.json({
+        contactExist,
+        message: "Success!!"
+    });
+}));
 router.get("/pendingmsg/:id", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const id = req.params.id;
     try {
