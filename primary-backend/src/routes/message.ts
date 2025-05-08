@@ -34,7 +34,6 @@ router.get("/get/:id",async(req,res)=>{
 router.get("/getcontact/:id/:contactId",async(req,res)=>{
     const userId = req.params.id;
     const contactId = req.params.contactId;
-
     const contactExist = await prismaClient.messageFeed.findFirst({
         where:{
             userId:userId,
