@@ -8,7 +8,7 @@ export default function(){
             <div className="flex flex-col justify-center items-center">
                 <h1 className="font-bold text-3xl py-5">Home</h1>
                 <button className="p-2 bg-orange-600 rounded-lg text-black font-light" onClick={()=>{
-                    router.push("/login")
+                    router.push("/login");
                 }}>Start Messaging</button>                
             </div>
         </div>
